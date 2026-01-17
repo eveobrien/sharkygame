@@ -3,6 +3,11 @@
 
   // Heart sprite (place heart.png beside index.html)
   const heartSprite = new Image();
+
+// Chihuahua sprite (replaces jumping sharks)
+const chihuahuaImg = new Image();
+chihuahuaImg.src = "chihuahua.png";
+
   heartSprite.src = "heart.png";
 
 
@@ -314,32 +319,34 @@
     return arr;
   }
 
-  function drawBigWhite(ctx,x,y,dir){
-    ctx.save(); ctx.translate(x,y);
-    if(dir===-1) ctx.scale(-1,1);
+  function drawBigWhite(ctx, x, y, dir) {
+    // Draw jumping Chihuahua sprite (replaces the old big white shark)
+    const w = 96;   // draw size (tweak if you want bigger/smaller)
+    const h = 64;
 
-    ctx.fillStyle="rgba(0,0,0,0.25)";
-    ctx.fillRect(-10,-8,120,26);
+    ctx.save();
+    ctx.translate(x, y);
+    if (dir === -1) ctx.scale(-1, 1);
+    ctx.imageSmoothingEnabled = false;
 
-    ctx.fillStyle="#ffffff";
-    ctx.fillRect(0,0,110,24);
-    ctx.fillRect(20,-10,70,10);
+    // soft shadow on the "water"/ground
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.fillRect(-w * 0.45, 2, w * 0.9, 6);
 
-    ctx.fillStyle="#b8d3e6";
-    ctx.fillRect(0,0,110,10);
-
-    ctx.fillStyle="#ffffff";
-    ctx.fillRect(52,-26,18,16);
-
-    ctx.fillStyle="#b8d3e6";
-    ctx.fillRect(-26,8,26,10);
-    ctx.fillRect(-14,0,14,8);
-
-    ctx.fillStyle="#000";
-    ctx.fillRect(88,10,4,4);
+    if (!chihuahuaImg.complete || chihuahuaImg.naturalWidth === 0) {
+      // fallback if image hasn't loaded yet
+      ctx.fillStyle = "#ffb07a";
+      ctx.fillRect(-w/2, -h, w, h);
+      ctx.fillStyle = "#000";
+      ctx.fillRect(-8, -h + 18, 6, 6);
+    } else {
+      // anchor: y is treated like "feet on floor"
+      ctx.drawImage(chihuahuaImg, -w / 2, -h, w, h);
+    }
 
     ctx.restore();
   }
+
 
   function drawHeart(ctx, C, cx, cy, size, frame) {
     const s = Math.round(size);

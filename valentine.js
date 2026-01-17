@@ -62,8 +62,7 @@
     celebrateT++;
     bg(ctx,canvas,COLORS);
     twinkles(ctx,COLORS,frame);
-    // Pass canvas so floating hearts can compute fade/positions safely
-    floatingHearts(ctx, COLORS, frame, canvas);
+    floatingHearts(ctx,COLORS,frame);
     tinySharks(ctx,COLORS,frame);
 
     const floorY=canvas.height*0.85;
@@ -93,8 +92,7 @@
     kissT++;
     bg(ctx,canvas,COLORS);
     twinkles(ctx,COLORS,frame);
-    // Pass canvas so floating hearts can compute fade/positions safely
-    floatingHearts(ctx, COLORS, frame, canvas);
+    floatingHearts(ctx,COLORS,frame);
 
     const cx=canvas.width/2, y=canvas.height*0.55;
     const t=Math.min(1, kissT/180);
@@ -235,6 +233,11 @@
     const alpha = Math.max(0, Math.min(1, (y + 120) / fadeDen));
 
     ctx.save();
+
+// --- SAFETY: ensure normal draw mode for sprites ---
+ctx.globalCompositeOperation = "source-over";
+ctx.globalAlpha = 1;
+
     ctx.globalAlpha = alpha;
     ctx.translate(x + jx + s / 2, y + jy + s / 2);
     ctx.rotate(rot);
@@ -251,6 +254,11 @@
 
   function drawCuteShark(ctx, C, x, y, dir, scale) {
     ctx.save();
+
+// --- SAFETY: ensure normal draw mode for sprites ---
+ctx.globalCompositeOperation = "source-over";
+ctx.globalAlpha = 1;
+
     ctx.translate(x, y);
     if (dir === -1) ctx.scale(-1, 1);
 
@@ -315,7 +323,12 @@
   }
 
   function drawBigWhite(ctx,x,y,dir){
-    ctx.save(); ctx.translate(x,y);
+    ctx.save();
+
+// --- SAFETY: ensure normal draw mode for sprites ---
+ctx.globalCompositeOperation = "source-over";
+ctx.globalAlpha = 1;
+ ctx.translate(x,y);
     if(dir===-1) ctx.scale(-1,1);
 
     ctx.fillStyle="rgba(0,0,0,0.25)";
@@ -345,6 +358,11 @@
     const s = Math.round(size);
     const rot = Math.sin(frame * 0.03) * 0.06;
     ctx.save();
+
+// --- SAFETY: ensure normal draw mode for sprites ---
+ctx.globalCompositeOperation = "source-over";
+ctx.globalAlpha = 1;
+
     ctx.translate(cx, cy);
     ctx.rotate(rot);
     ctx.imageSmoothingEnabled = false;

@@ -62,7 +62,8 @@
     celebrateT++;
     bg(ctx,canvas,COLORS);
     twinkles(ctx,COLORS,frame);
-    floatingHearts(ctx,COLORS,frame);
+    // Pass canvas so floating hearts can compute fade/positions safely
+    floatingHearts(ctx, COLORS, frame, canvas);
     tinySharks(ctx,COLORS,frame);
 
     const floorY=canvas.height*0.85;
@@ -92,7 +93,8 @@
     kissT++;
     bg(ctx,canvas,COLORS);
     twinkles(ctx,COLORS,frame);
-    floatingHearts(ctx,COLORS,frame);
+    // Pass canvas so floating hearts can compute fade/positions safely
+    floatingHearts(ctx, COLORS, frame, canvas);
 
     const cx=canvas.width/2, y=canvas.height*0.55;
     const t=Math.min(1, kissT/180);

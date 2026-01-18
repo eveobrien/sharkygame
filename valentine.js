@@ -144,7 +144,7 @@ const cx=canvas.width/2, y=canvas.height*0.55;
 
     // Paragraph (gift-ready, forever language)
     const paragraph =
-      "I love you more than I can put into words. Every day with you feels like magic, and I want to choose you—today, tomorrow, and forever. You are my soulmate, my best friend, and my favorite adventure. I want to be with you for the rest of my life.";
+      "I love you more than I can put into words. I want you today, tomorrow, and always. You are my soulmate, my best friend, and my forever. I want to be with you for the rest of this life and the next, through all of your happiest days, and your darkest days - forever <3";
 
     ctx.fillStyle = C.white;
     ctx.font = "14px 'Press Start 2P'";

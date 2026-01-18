@@ -1,29 +1,65 @@
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d"); ctx.imageSmoothingEnabled=false;
 
-// --- Mobile-friendly canvas scaling (keeps game logic in 800x1000 coordinates) ---
-const LOGICAL_W = 800;
-const LOGICAL_H = 1000;
-canvas.width = LOGICAL_W;
-canvas.height = LOGICAL_H;
-ctx.imageSmoothingEnabled = false;
-
-function resizeCanvasCss(){
+// --- Mobile/iPhone support: fit canvas to screen and use tap controls ---
+function resizeCanvasToScreen() {
+  const targetW = 800;
+  const targetH = 1000;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const scale = Math.min(vw / LOGICAL_W, vh / LOGICAL_H);
-  const cssW = Math.floor(LOGICAL_W * scale);
-  const cssH = Math.floor(LOGICAL_H * scale);
-  canvas.style.width = cssW + "px";
-  canvas.style.height = cssH + "px";
+  const scale = Math.min(vw / targetW, vh / targetH);
+  canvas.style.width = Math.floor(targetW * scale) + "px";
+  canvas.style.height = Math.floor(targetH * scale) + "px";
 }
-window.addEventListener("resize", resizeCanvasCss);
-window.addEventListener("orientationchange", resizeCanvasCss);
-resizeCanvasCss();
+window.addEventListener("resize", resizeCanvasToScreen);
+window.addEventListener("orientationchange", resizeCanvasToScreen);
+resizeCanvasToScreen();
+
+// Prevent iOS pinch-zoom gestures
+document.addEventListener("gesturestart", (e) => e.preventDefault(), { passive: false });
+
+// Tap-to-play controls (works with mouse too via Pointer Events)
+canvas.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+
+  // Tap-to-start / Tap-to-retry / Tap-to-flap
+  if (gameState === "start") {
+    // Let replay button be handled by the click handler (we dispatch a click)
+    // but if the tap wasn't on replay, start the run.
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    if (storySeen) {
+      const r = getReplayButtonRect();
+      const inRect = x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+      if (inRect) {
+        canvas.dispatchEvent(new MouseEvent("click", { clientX: e.clientX, clientY: e.clientY, bubbles: true }));
+        return;
+      }
+    }
+    resetGame();
+    return;
+  }
+
+  if (gameState === "playing") {
+    shark.velocity = -11; // same jump strength as Space
+    return;
+  }
+
+  if (gameState === "gameover") {
+    gameState = "start";
+    return;
+  }
+
+  // For story screens (valentine/final), reuse click logic so buttons work while scaled
+  canvas.dispatchEvent(new MouseEvent("click", { clientX: e.clientX, clientY: e.clientY, bubbles: true }));
+}, { passive: false });
+
 
 
 // Turn this off before shipping
-const DEV_MODE=false;
+const DEV_MODE = false;
 
 const COLORS={
   purpleMain:"#9b7bd3", purpleDark:"#6f4fa3",
@@ -32,6 +68,8 @@ const COLORS={
   bg:"#1a1429",
   pinkSparkle:"#ff4fd8", pinkSparkleLight:"#ff8fe7",
   blueShark:"#8fd3ff", white:"#ffffff",
+  sharkDark:"#1f4a7a", sharkMid:"#3f7fc8", sharkLight:"#8fd3ff", sharkBelly:"#eef7ff", sharkStripe:"#f2d16b",
+
 };
 
 let gameState="start"; // start|playing|gameover|freeze|transition|valentine|celebrate|kiss|final
@@ -51,6 +89,7 @@ let bestScore=Number(localStorage.getItem("bestScore"))||0;
 let secretUnlocked = localStorage.getItem("secretUnlocked") === "true";
 let storySeen = localStorage.getItem("storySeen") === "true";
 
+let runsPlayed = Number(localStorage.getItem("runsPlayed")) || 0;
 for(let i=0;i<80;i++) stars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,speed:Math.random()*0.25+0.1});
 for(let i=0;i<30;i++) bubbles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,size:Math.random()*3+2,speed:Math.random()*0.35+0.2});
 
@@ -69,52 +108,33 @@ document.addEventListener("keydown",(e)=>{
   if(e.code==="KeyV"){ gameState="freeze"; freezeTimer=0; transitionOffset=0; fadeAlpha=0; }
 });
 
-canvas.addEventListener("pointerdown", (e) => {
-  e.preventDefault();
+canvas.addEventListener("click", (e) => {
 
-  const rect = canvas.getBoundingClientRect();
-  const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-  const y = (e.clientY - rect.top) * (canvas.height / rect.height);
-
-  // Tap-to-start / tap-to-flap / tap-to-retry for iPhone (keyboard may not be present)
-  if (gameState === "start") {
-    // Home screen replay button (available after the story has been seen once)
-    if (storySeen) {
-      const r = getReplayButtonRect();
-      const inRect = x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
-      if (inRect) {
-        enterValentine();
-        return;
-      }
+  // Home screen replay button (available after the story has been seen once)
+  if (gameState === "start" && storySeen) {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const r = getReplayButtonRect();
+    const inRect = x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+    if (inRect) {
+      enterValentine(); // replay the whole love story
+      return;
     }
-    resetGame();
-    return;
   }
 
-  if (gameState === "playing") {
-    shark.velocity = jumpStrength;
-    return;
-  }
-
-  if (gameState === "gameover") {
-    gameState = "start";
-    return;
-  }
-
-  if (gameState === "valentine") {
-    const didYes = Valentine.handleValentineClick({ canvas, x, y, getButtons: getValentineButtons });
-    if (didYes) {
+  if(gameState==="valentine"){
+    const rect=canvas.getBoundingClientRect();
+    const x=(e.clientX-rect.left)*(canvas.width/rect.width), y=(e.clientY-rect.top)*(canvas.height/rect.height);
+    const didYes=Valentine.handleValentineClick({canvas,x,y,getButtons:getValentineButtons});
+    if(didYes){
       spawnSparkles(canvas.width/2, canvas.height*0.46, COLORS.pinkSparkleLight, 56);
       enterCelebrate();
     }
     return;
   }
-
-  if (gameState === "final") {
-    gameState = "start";
-    return;
-  }
-}, { passive: false });
+  if(gameState==="final") gameState="start";
+});
 
 function getReplayButtonRect(){
   const w = 420;
@@ -139,6 +159,9 @@ function resetGame(){
   pipes=[]; score=0; frame=0; currentRunPath=[];
   freezeTimer=0; transitionOffset=0; fadeAlpha=0; sparkles=[];
   gameState="playing";
+  // Count runs so we can trigger the love story on the 2nd play
+  runsPlayed += 1;
+  localStorage.setItem("runsPlayed", String(runsPlayed));
 }
 
 function createPipe(){
@@ -195,25 +218,40 @@ function enterKiss() {
 }
 function enterFinal() {
   gameState = "final";
+  // Mark story as completed so the replay button appears on Home
+  storySeen = true;
+  localStorage.setItem("storySeen", "true");
   if (window.Valentine && Valentine.startFinal) Valentine.startFinal({ canvas, COLORS });
 }
 
 function endGame(){
   if(DEV_MODE){ gameState="freeze"; freezeTimer=0; transitionOffset=0; fadeAlpha=0; return; }
 
-  const hadGhost=ghostPath.length>0;
-  if(score>bestScore){
-    bestScore=score; ghostPath=currentRunPath;
+  // Update best score + ghost data (optional replay path)
+  const hadGhost = ghostPath.length > 0;
+  if(score > bestScore){
+    bestScore = score;
+    ghostPath = currentRunPath;
     localStorage.setItem("bestScore", bestScore);
     localStorage.setItem("ghostPath", JSON.stringify(ghostPath));
-    if(hadGhost && !secretUnlocked){
-      secretUnlocked=true; localStorage.setItem("secretUnlocked","true");
-      gameState="freeze"; freezeTimer=0; transitionOffset=0; fadeAlpha=0;
-      return;
-    }
   }
-  gameState="gameover";
+
+  // Ship behavior: trigger the love story after the player has played twice
+  // (i.e., on the game over of the 2nd run). This unlocks once.
+  if(!secretUnlocked && runsPlayed >= 2){
+    secretUnlocked = true;
+    localStorage.setItem("secretUnlocked", "true");
+    gameState = "freeze";
+    freezeTimer = 0;
+    transitionOffset = 0;
+    fadeAlpha = 0;
+    return;
+  }
+
+  // Normal game over
+  gameState = "gameover";
 }
+
 
 function updateBackground(){
   stars.forEach(s=>{ s.y+=s.speed; if(s.y>canvas.height) s.y=0; });
@@ -228,14 +266,60 @@ function drawBackground(){
   ctx.fillStyle="rgba(200,210,255,0.5)"; bubbles.forEach(b=>ctx.fillRect(b.x,b.y,b.size,b.size));
 }
 
-function drawPixelShark(x,y,a=1){
-  ctx.save(); ctx.globalAlpha=a;
-  ctx.fillStyle=COLORS.purpleDark; ctx.fillRect(x-1,y+1,18,10);
-  ctx.fillStyle=COLORS.purpleMain; ctx.fillRect(x,y,16,8); ctx.fillRect(x+2,y-4,12,4);
-  ctx.fillStyle=COLORS.purpleDark; ctx.fillRect(x+6,y-8,4,4); ctx.fillRect(x-4,y+2,4,4);
-  ctx.fillStyle="#000"; ctx.fillRect(x+12,y+2,2,2);
+// Detailed main shark (blue/yellow)
+function drawPixelShark(x, y, a = 1) {
+  ctx.save();
+  ctx.globalAlpha = a;
+
+  // shadow
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  ctx.fillRect(x - 6, y + 26, 46, 3);
+
+  // back ridge
+  ctx.fillStyle = COLORS.sharkDark;
+  ctx.fillRect(x + 6, y + 10, 34, 14);
+  ctx.fillRect(x + 16, y + 4, 18, 6);
+
+  // body mid
+  ctx.fillStyle = COLORS.sharkMid;
+  ctx.fillRect(x + 8, y + 12, 34, 12);
+  ctx.fillRect(x + 18, y + 6, 16, 6);
+
+  // highlight
+  ctx.fillStyle = COLORS.sharkLight;
+  ctx.fillRect(x + 12, y + 12, 18, 4);
+  ctx.fillRect(x + 24, y + 16, 12, 3);
+
+  // belly
+  ctx.fillStyle = COLORS.sharkBelly;
+  ctx.fillRect(x + 18, y + 22, 18, 6);
+
+  // yellow stripe accent
+  ctx.fillStyle = COLORS.sharkStripe;
+  ctx.fillRect(x + 14, y + 18, 10, 2);
+
+  // fin
+  ctx.fillStyle = COLORS.sharkDark;
+  ctx.fillRect(x + 26, y - 4, 8, 10);
+  ctx.fillStyle = COLORS.sharkMid;
+  ctx.fillRect(x + 27, y - 3, 6, 8);
+
+  // tail
+  ctx.fillStyle = COLORS.sharkMid;
+  ctx.fillRect(x - 10, y + 16, 14, 10);
+  ctx.fillStyle = COLORS.sharkDark;
+  ctx.fillRect(x - 16, y + 14, 6, 6);
+
+  // eye
+  ctx.fillStyle = "#000";
+  ctx.fillRect(x + 36, y + 16, 3, 3);
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(x + 37, y + 16, 1, 1);
+
   ctx.restore();
 }
+
+
 
 function drawCoral(p,y,height,flip=1){
   const sway=Math.sin(frame*0.02+p.swaySeed)*3;

@@ -3,11 +3,9 @@
 
   // Heart sprite (place heart.png beside index.html)
   const heartSprite = new Image();
-
-// Chihuahua sprite (replaces jumping sharks)
-const chihuahuaImg = new Image();
-chihuahuaImg.src = "chihuahua.png";
-
+  // Chihuahua sprite (jumping celebrate jumpers)
+  const chihuahuaImg = new Image();
+  chihuahuaImg.src = "chihuahua.png";
   heartSprite.src = "heart.png";
 
 
@@ -67,8 +65,7 @@ chihuahuaImg.src = "chihuahua.png";
     celebrateT++;
     bg(ctx,canvas,COLORS);
     twinkles(ctx,COLORS,frame);
-    // Pass canvas so floating hearts can compute fade/positions safely
-    floatingHearts(ctx, COLORS, frame, canvas);
+    floatingHearts(ctx,COLORS,frame);
     tinySharks(ctx,COLORS,frame);
 
     const floorY=canvas.height*0.85;
@@ -98,8 +95,7 @@ chihuahuaImg.src = "chihuahua.png";
     kissT++;
     bg(ctx,canvas,COLORS);
     twinkles(ctx,COLORS,frame);
-    // Pass canvas so floating hearts can compute fade/positions safely
-    floatingHearts(ctx, COLORS, frame, canvas);
+    floatingHearts(ctx,COLORS,frame);
 
     const cx=canvas.width/2, y=canvas.height*0.55;
     const t=Math.min(1, kissT/180);
@@ -149,13 +145,13 @@ chihuahuaImg.src = "chihuahua.png";
 
     // Paragraph (gift-ready, forever language)
     const paragraph =
-      "I love you more than I can put into words. You are perfect to me, and so incredibly beautiful inside and out I will choose you today, tomorrow, and forever. You are my soulmate, my best friend, and my favorite person. I want to be with you for the rest of my life.";
+      "I love you more than I can put into words. Every day with you feels like magic, and I want to choose you—today, tomorrow, and forever. You are my soulmate, my best friend, and my favorite adventure. I want to be with you for the rest of my life.";
 
     ctx.fillStyle = C.white;
     ctx.font = "14px 'Press Start 2P'";
     const maxW = Math.min(620, canvas.width * 0.82);
     const startY = canvas.height * 0.30;
-    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.fillStyle = "rgba(0,0,0,0)";
     ctx.fillRect(Math.round(cx - maxW/2) - 18, Math.round(startY) - 34, Math.round(maxW) + 36, 240);
 
     ctx.fillStyle = C.white;
@@ -319,15 +315,17 @@ chihuahuaImg.src = "chihuahua.png";
     return arr;
   }
 
-  function drawBigWhite(ctx, x, y, dir) {
-    // Draw jumping Chihuahua sprite (replaces the old big white shark)
+  function drawBigWhite(ctx, x, y, dir){
+    // Draw jumping Chihuahua sprite (replaces the old rectangular big white shark)
     const w = 96;   // draw size (tweak if you want bigger/smaller)
     const h = 64;
 
     ctx.save();
     ctx.translate(x, y);
-    if (dir === -1) ctx.scale(-1, 1);
+    if(dir===-1) ctx.scale(-1,1);
     ctx.imageSmoothingEnabled = false;
+
+    // Anchor: y is treated like "feet on floor"
     if (!chihuahuaImg.complete || chihuahuaImg.naturalWidth === 0) {
       // fallback if image hasn't loaded yet
       ctx.fillStyle = "#ffb07a";
@@ -335,8 +333,7 @@ chihuahuaImg.src = "chihuahua.png";
       ctx.fillStyle = "#000";
       ctx.fillRect(-8, -h + 18, 6, 6);
     } else {
-      // anchor: y is treated like "feet on floor"
-      ctx.drawImage(chihuahuaImg, -w / 2, -h, w, h);
+      ctx.drawImage(chihuahuaImg, -w/2, -h, w, h);
     }
 
     ctx.restore();

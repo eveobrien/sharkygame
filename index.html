@@ -11,22 +11,19 @@
       height: 100%;
       overflow: hidden;
       background: #1a1429;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-      touch-action: manipulation;
-      -webkit-user-select: none;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    body {
       display: flex;
       justify-content: center;
       align-items: center;
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
     }
     canvas {
       border: 4px solid #6f4fa3;
       image-rendering: pixelated;
-      touch-action: none;
       cursor: pointer;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
     }
   </style>
 </head>

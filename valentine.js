@@ -65,8 +65,8 @@
     celebrateT++;
     bg(ctx,canvas,COLORS);
     twinkles(ctx,COLORS,frame);
-    floatingHearts(ctx,COLORS,frame);
-    tinySharks(ctx,COLORS,frame);
+    floatingHearts(ctx, COLORS, frame, canvas);
+tinySharks(ctx,COLORS,frame);
 
     const floorY=canvas.height*0.85;
     bigWhites.forEach(s=>{
@@ -95,9 +95,8 @@
     kissT++;
     bg(ctx,canvas,COLORS);
     twinkles(ctx,COLORS,frame);
-    floatingHearts(ctx,COLORS,frame);
-
-    const cx=canvas.width/2, y=canvas.height*0.55;
+    floatingHearts(ctx, COLORS, frame, canvas);
+const cx=canvas.width/2, y=canvas.height*0.55;
     const t=Math.min(1, kissT/180);
     const leftX=lerp(-220, cx-110, t);
     const rightX=lerp(canvas.width+220, cx+110, t);

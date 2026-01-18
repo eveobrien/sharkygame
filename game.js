@@ -1,65 +1,8 @@
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d"); ctx.imageSmoothingEnabled=false;
 
-// --- Mobile/iPhone support: fit canvas to screen and use tap controls ---
-function resizeCanvasToScreen() {
-  const targetW = 800;
-  const targetH = 1000;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const scale = Math.min(vw / targetW, vh / targetH);
-  canvas.style.width = Math.floor(targetW * scale) + "px";
-  canvas.style.height = Math.floor(targetH * scale) + "px";
-}
-window.addEventListener("resize", resizeCanvasToScreen);
-window.addEventListener("orientationchange", resizeCanvasToScreen);
-resizeCanvasToScreen();
-
-// Prevent iOS pinch-zoom gestures
-document.addEventListener("gesturestart", (e) => e.preventDefault(), { passive: false });
-
-// Tap-to-play controls (works with mouse too via Pointer Events)
-canvas.addEventListener("pointerdown", (e) => {
-  e.preventDefault();
-
-  // Tap-to-start / Tap-to-retry / Tap-to-flap
-  if (gameState === "start") {
-    // Let replay button be handled by the click handler (we dispatch a click)
-    // but if the tap wasn't on replay, start the run.
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
-
-    if (storySeen) {
-      const r = getReplayButtonRect();
-      const inRect = x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
-      if (inRect) {
-        canvas.dispatchEvent(new MouseEvent("click", { clientX: e.clientX, clientY: e.clientY, bubbles: true }));
-        return;
-      }
-    }
-    resetGame();
-    return;
-  }
-
-  if (gameState === "playing") {
-    shark.velocity = -11; // same jump strength as Space
-    return;
-  }
-
-  if (gameState === "gameover") {
-    gameState = "start";
-    return;
-  }
-
-  // For story screens (valentine/final), reuse click logic so buttons work while scaled
-  canvas.dispatchEvent(new MouseEvent("click", { clientX: e.clientX, clientY: e.clientY, bubbles: true }));
-}, { passive: false });
-
-
-
 // Turn this off before shipping
-const DEV_MODE = true;
+const DEV_MODE=true;
 
 const COLORS={
   purpleMain:"#9b7bd3", purpleDark:"#6f4fa3",
@@ -89,7 +32,6 @@ let bestScore=Number(localStorage.getItem("bestScore"))||0;
 let secretUnlocked = localStorage.getItem("secretUnlocked") === "true";
 let storySeen = localStorage.getItem("storySeen") === "true";
 
-let runsPlayed = Number(localStorage.getItem("runsPlayed")) || 0;
 for(let i=0;i<80;i++) stars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,speed:Math.random()*0.25+0.1});
 for(let i=0;i<30;i++) bubbles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,size:Math.random()*3+2,speed:Math.random()*0.35+0.2});
 
@@ -113,8 +55,8 @@ canvas.addEventListener("click", (e) => {
   // Home screen replay button (available after the story has been seen once)
   if (gameState === "start" && storySeen) {
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
     const r = getReplayButtonRect();
     const inRect = x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
     if (inRect) {
@@ -125,7 +67,7 @@ canvas.addEventListener("click", (e) => {
 
   if(gameState==="valentine"){
     const rect=canvas.getBoundingClientRect();
-    const x=(e.clientX-rect.left)*(canvas.width/rect.width), y=(e.clientY-rect.top)*(canvas.height/rect.height);
+    const x=e.clientX-rect.left, y=e.clientY-rect.top;
     const didYes=Valentine.handleValentineClick({canvas,x,y,getButtons:getValentineButtons});
     if(didYes){
       spawnSparkles(canvas.width/2, canvas.height*0.46, COLORS.pinkSparkleLight, 56);
@@ -159,9 +101,6 @@ function resetGame(){
   pipes=[]; score=0; frame=0; currentRunPath=[];
   freezeTimer=0; transitionOffset=0; fadeAlpha=0; sparkles=[];
   gameState="playing";
-  // Count runs so we can trigger the love story on the 2nd play
-  runsPlayed += 1;
-  localStorage.setItem("runsPlayed", String(runsPlayed));
 }
 
 function createPipe(){
@@ -227,31 +166,19 @@ function enterFinal() {
 function endGame(){
   if(DEV_MODE){ gameState="freeze"; freezeTimer=0; transitionOffset=0; fadeAlpha=0; return; }
 
-  // Update best score + ghost data (optional replay path)
-  const hadGhost = ghostPath.length > 0;
-  if(score > bestScore){
-    bestScore = score;
-    ghostPath = currentRunPath;
+  const hadGhost=ghostPath.length>0;
+  if(score>bestScore){
+    bestScore=score; ghostPath=currentRunPath;
     localStorage.setItem("bestScore", bestScore);
     localStorage.setItem("ghostPath", JSON.stringify(ghostPath));
+    if(hadGhost && !secretUnlocked){
+      secretUnlocked=true; localStorage.setItem("secretUnlocked","true");
+      gameState="freeze"; freezeTimer=0; transitionOffset=0; fadeAlpha=0;
+      return;
+    }
   }
-
-  // Ship behavior: trigger the love story after the player has played twice
-  // (i.e., on the game over of the 2nd run). This unlocks once.
-  if(!secretUnlocked && runsPlayed >= 2){
-    secretUnlocked = true;
-    localStorage.setItem("secretUnlocked", "true");
-    gameState = "freeze";
-    freezeTimer = 0;
-    transitionOffset = 0;
-    fadeAlpha = 0;
-    return;
-  }
-
-  // Normal game over
-  gameState = "gameover";
+  gameState="gameover";
 }
-
 
 function updateBackground(){
   stars.forEach(s=>{ s.y+=s.speed; if(s.y>canvas.height) s.y=0; });
@@ -322,22 +249,60 @@ function drawPixelShark(x, y, a = 1) {
 
 
 function drawCoral(p,y,height,flip=1){
-  const sway=Math.sin(frame*0.02+p.swaySeed)*3;
-  const x=p.x+sway*flip;
-  ctx.fillStyle=COLORS.redCoral; ctx.fillRect(x,y,pipeWidth,height);
-  for(let i=0;i<height;i+=16){ ctx.fillRect(x-4,y+i,4,10); ctx.fillRect(x+pipeWidth,y+i+6,4,10); }
-  ctx.fillStyle=COLORS.redCoralDark; ctx.fillRect(x+pipeWidth-4,y,4,height);
-  ctx.fillStyle=COLORS.yellowSoft;
+  const sway = Math.sin(frame*0.02 + p.swaySeed) * 3;
+  const x = p.x + sway * flip;
+
+  // Base body
+  ctx.fillStyle = COLORS.redCoral;
+  ctx.fillRect(x, y, pipeWidth, height);
+
+  // Organic side nubs (branchy look)
+  for(let i=0;i<height;i+=18){
+    const wob = (Math.sin((frame+i)*0.03 + p.swaySeed) > 0.2) ? 1 : 0;
+    ctx.fillRect(x - (4+wob), y + i + 2, 4+wob, 10);
+    ctx.fillRect(x + pipeWidth, y + i + 8, 4+wob, 10);
+  }
+
+  // Shading stripes to add depth
+  ctx.fillStyle = COLORS.redCoralDark;
+  for(let sx=0; sx<pipeWidth; sx+=6){
+    if((sx/6 + (p.seed||0)) % 2 === 0){
+      ctx.fillRect(x + sx, y, 2, height);
+    }
+  }
+  // Right edge shadow
+  ctx.fillRect(x + pipeWidth - 4, y, 4, height);
+
+  // Rim/cap at the opening (makes it feel less like a rectangle)
+  const capH = 8;
+  const capY = (y === 0) ? (y + height - capH) : y;
+  // Dark outer rim
+  ctx.fillStyle = COLORS.redCoralDark;
+  ctx.fillRect(x - 2, capY, pipeWidth + 4, capH);
+  // Lighter inner rim
+  ctx.fillStyle = COLORS.redCoral;
+  ctx.fillRect(x, capY + 2, pipeWidth, capH - 3);
+  // Little jagged pixels on the rim
+  ctx.fillStyle = COLORS.redCoralDark;
+  for(let j=0;j<pipeWidth;j+=10){
+    const bx = x + j + ((p.seed||0) % 3);
+    ctx.fillRect(bx, capY + ((j/10)%2===0 ? 1 : 5), 3, 2);
+  }
+
+  // Polyps/sparkly life
+  ctx.fillStyle = COLORS.yellowSoft;
   p.polyps.forEach((pp,i)=>{
-    if(Math.sin(frame*0.05+pp*10)>0.6){
-      const px=x+(i*7)%(pipeWidth-2);
-      const py=y+(i*29)%Math.max(1,height-2);
-      ctx.fillRect(px,py,2,2);
+    if(Math.sin(frame*0.05 + pp*10) > 0.6){
+      const px = x + (i*7)%(pipeWidth-2);
+      const py = y + (i*29)%Math.max(1,height-2);
+      ctx.fillRect(px, py, 2, 2);
+      // occasional extra pixel for "anemone" feel
+      if(i%3===0) ctx.fillRect(px+2, py, 1, 1);
     }
   });
 }
 
-function drawPipes(){ pipes.forEach(p=>{ drawCoral(p,0,p.top,1); drawCoral(p,p.bottom,canvas.height-p.bottom,-1); }); }
+function drawPipesfunction drawPipes(){ pipes.forEach(p=>{ drawCoral(p,0,p.top,1); drawCoral(p,p.bottom,canvas.height-p.bottom,-1); }); }
 
 
 function drawGhost(){
@@ -378,8 +343,10 @@ function drawText(){
   }
   if(gameState==="freeze"){
     ctx.font="12px 'Press Start 2P'"; ctx.fillStyle="#fff";
-    ctx.fillText("WHATS THIS?", canvas.width/2, 260);
-    ctx.fillText("...A SECRET?,", canvas.width/2, 290);
+    ctx.fillText("IF YOU CAN OUTSWIM", canvas.width/2, 260);
+    ctx.fillText("YOUR PAST,", canvas.width/2, 290);
+    ctx.fillStyle=COLORS.yellowSoft; ctx.fillText("IMAGINE WHAT WE", canvas.width/2, 330);
+    ctx.fillStyle="#fff"; ctx.fillText("CAN BUILD TOGETHER", canvas.width/2, 360);
   }
 }
 

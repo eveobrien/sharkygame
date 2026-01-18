@@ -120,7 +120,7 @@ const cx=canvas.width/2, y=canvas.height*0.55;
     ctx.textAlign="center";
     ctx.font="18px 'Press Start 2P'";
     ctx.fillStyle=COLORS.pinkSparkle;
-    ctx.fillText("MWAH 💋", cx, canvas.height*0.22);
+    ctx.fillText("MWAH <3", cx, canvas.height*0.22);
 
     drawSparkles(COLORS.pinkSparkleLight);
     return kissT>360;

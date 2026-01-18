@@ -328,11 +328,6 @@ chihuahuaImg.src = "chihuahua.png";
     ctx.translate(x, y);
     if (dir === -1) ctx.scale(-1, 1);
     ctx.imageSmoothingEnabled = false;
-
-    // soft shadow on the "water"/ground
-    ctx.fillStyle = "rgba(0,0,0,0.25)";
-    ctx.fillRect(-w * 0.45, 2, w * 0.9, 6);
-
     if (!chihuahuaImg.complete || chihuahuaImg.naturalWidth === 0) {
       // fallback if image hasn't loaded yet
       ctx.fillStyle = "#ffb07a";

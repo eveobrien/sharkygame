@@ -32,6 +32,7 @@ let bestScore=Number(localStorage.getItem("bestScore"))||0;
 let secretUnlocked = localStorage.getItem("secretUnlocked") === "true";
 let storySeen = localStorage.getItem("storySeen") === "true";
 
+let runsPlayed = Number(localStorage.getItem("runsPlayed")) || 0;
 for(let i=0;i<80;i++) stars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,speed:Math.random()*0.25+0.1});
 for(let i=0;i<30;i++) bubbles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,size:Math.random()*3+2,speed:Math.random()*0.35+0.2});
 
@@ -101,6 +102,9 @@ function resetGame(){
   pipes=[]; score=0; frame=0; currentRunPath=[];
   freezeTimer=0; transitionOffset=0; fadeAlpha=0; sparkles=[];
   gameState="playing";
+  // Count completed runs to trigger the love story on the 2nd play
+  runsPlayed += 1;
+  localStorage.setItem("runsPlayed", String(runsPlayed));
 }
 
 function createPipe(){
@@ -166,6 +170,8 @@ function enterFinal() {
 function endGame(){
   if(DEV_MODE){ gameState="freeze"; freezeTimer=0; transitionOffset=0; fadeAlpha=0; return; }
 
+  
+  // Ship behavior: trigger the love story after the player has played twice (on the 2nd run's game over).
   const hadGhost=ghostPath.length>0;
   if(score>bestScore){
     bestScore=score; ghostPath=currentRunPath;

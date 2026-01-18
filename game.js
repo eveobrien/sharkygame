@@ -59,7 +59,7 @@ canvas.addEventListener("pointerdown", (e) => {
 
 
 // Turn this off before shipping
-const DEV_MODE = false;
+const DEV_MODE = true;
 
 const COLORS={
   purpleMain:"#9b7bd3", purpleDark:"#6f4fa3",
@@ -378,10 +378,8 @@ function drawText(){
   }
   if(gameState==="freeze"){
     ctx.font="12px 'Press Start 2P'"; ctx.fillStyle="#fff";
-    ctx.fillText("IF YOU CAN OUTSWIM", canvas.width/2, 260);
-    ctx.fillText("YOUR PAST,", canvas.width/2, 290);
-    ctx.fillStyle=COLORS.yellowSoft; ctx.fillText("IMAGINE WHAT WE", canvas.width/2, 330);
-    ctx.fillStyle="#fff"; ctx.fillText("CAN BUILD TOGETHER", canvas.width/2, 360);
+    ctx.fillText("WHATS THIS?", canvas.width/2, 260);
+    ctx.fillText("...A SECRET?,", canvas.width/2, 290);
   }
 }
 

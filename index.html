@@ -2,33 +2,59 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
   <title>Flappy Shark</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
     html, body {
       margin: 0;
+      width: 100%;
       height: 100%;
-      overflow: hidden;
       background: #1a1429;
+      overflow: hidden;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none;
+    }
+    body {
       display: flex;
       justify-content: center;
       align-items: center;
-      touch-action: manipulation;
-      -webkit-user-select: none;
-      user-select: none;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
     canvas {
       border: 4px solid #6f4fa3;
       image-rendering: pixelated;
+      image-rendering: crisp-edges;
       cursor: pointer;
       touch-action: none;
-      -webkit-tap-highlight-color: transparent;
     }
   </style>
 </head>
 <body>
   <canvas id="game" width="800" height="1000"></canvas>
+  <script>
+    // Responsive CSS-scaling for iPhone (keeps 800x1000 internal coords)
+    (function(){
+      const canvas = document.getElementById("game");
+      function fit(){
+        const vw = Math.max(1, window.innerWidth);
+        const vh = Math.max(1, window.innerHeight);
+        const scale = Math.min(vw / canvas.width, vh / canvas.height);
+        canvas.style.width = Math.floor(canvas.width * scale) + "px";
+        canvas.style.height = Math.floor(canvas.height * scale) + "px";
+      }
+      window.addEventListener("resize", fit);
+      window.addEventListener("orientationchange", fit);
+      fit();
+
+      // Prevent iOS pinch-zoom gestures from stealing input
+      ["gesturestart","gesturechange","gestureend"].forEach(ev => {
+        document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
+      });
+    })();
+  </script>
   <script src="valentine.js"></script>
   <script src="game.js"></script>
 </body>

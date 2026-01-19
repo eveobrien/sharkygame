@@ -3,9 +3,11 @@
 
   // Heart sprite (place heart.png beside index.html)
   const heartSprite = new Image();
-  // Chihuahua sprite (jumping celebrate jumpers)
-  const chihuahuaImg = new Image();
-  chihuahuaImg.src = "chihuahua.png";
+
+// Chihuahua sprite (replaces jumping sharks)
+const chihuahuaImg = new Image();
+chihuahuaImg.src = "chihuahua.png";
+
   heartSprite.src = "heart.png";
 
 
@@ -18,7 +20,7 @@
   Valentine.startKiss=({canvas})=>{ kissT=0; kissHearts=[]; if(!vHearts.length||!vStars.length||!vSharks.length) initParticles(canvas); };
   Valentine.startFinal=()=>{ finalT=0; };
 
-  Valentine.update=({frame,canvas})=>{ updateParticles(frame,canvas); };
+  Valentine.update=({frame,canvas,step=1})=>{ updateParticles(frame,canvas,step); };
 
   Valentine.handleValentineClick=({x,y,getButtons})=>{
     const {left,right}=getButtons();
@@ -65,8 +67,9 @@
     celebrateT++;
     bg(ctx,canvas,COLORS);
     twinkles(ctx,COLORS,frame);
+    // Pass canvas so floating hearts can compute fade/positions safely
     floatingHearts(ctx, COLORS, frame, canvas);
-tinySharks(ctx,COLORS,frame);
+    tinySharks(ctx,COLORS,frame);
 
     const floorY=canvas.height*0.85;
     bigWhites.forEach(s=>{
@@ -95,8 +98,10 @@ tinySharks(ctx,COLORS,frame);
     kissT++;
     bg(ctx,canvas,COLORS);
     twinkles(ctx,COLORS,frame);
+    // Pass canvas so floating hearts can compute fade/positions safely
     floatingHearts(ctx, COLORS, frame, canvas);
-const cx=canvas.width/2, y=canvas.height*0.55;
+
+    const cx=canvas.width/2, y=canvas.height*0.55;
     const t=Math.min(1, kissT/180);
     const leftX=lerp(-220, cx-110, t);
     const rightX=lerp(canvas.width+220, cx+110, t);
@@ -120,7 +125,7 @@ const cx=canvas.width/2, y=canvas.height*0.55;
     ctx.textAlign="center";
     ctx.font="18px 'Press Start 2P'";
     ctx.fillStyle=COLORS.pinkSparkle;
-    ctx.fillText("MWAH <3", cx, canvas.height*0.22);
+    ctx.fillText("MWAH", cx, canvas.height*0.22);
 
     drawSparkles(COLORS.pinkSparkleLight);
     return kissT>360;
@@ -144,17 +149,22 @@ const cx=canvas.width/2, y=canvas.height*0.55;
 
     // Paragraph (gift-ready, forever language)
     const paragraph =
-      "I love you more than I can put into words. I want you today, tomorrow, and always. You are my soulmate, my best friend, and my forever. I want to be with you for the rest of this life and the next, through all of your happiest days, and your darkest days - forever <3";
+      "I love you more than I can put into words. You are perfect to me, and so incredibly beautiful inside and out I will choose you today, tomorrow, and forever. You are my soulmate, my best friend, and my favourite person. I want to be with you for the rest of my life.";
 
     ctx.fillStyle = C.white;
     ctx.font = "14px 'Press Start 2P'";
     const maxW = Math.min(620, canvas.width * 0.82);
     const startY = canvas.height * 0.30;
-    ctx.fillStyle = "rgba(0,0,0,0)";
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
     ctx.fillRect(Math.round(cx - maxW/2) - 18, Math.round(startY) - 34, Math.round(maxW) + 36, 240);
 
     ctx.fillStyle = C.white;
     wrapText(ctx, paragraph, cx, startY, maxW, 26);
+
+    // Final line – softer, romantic emphasis
+    ctx.fillStyle = C.pinkSparkleLight;
+    ctx.font = "14px 'Press Start 2P'";
+    ctx.fillText("My forever Valentine 💜", cx, startY + 26 * 7);
 
     // Soft prompt
     ctx.fillStyle = C.sparklePinkLight || C.pinkSparkleLight;
@@ -179,17 +189,17 @@ const cx=canvas.width/2, y=canvas.height*0.55;
     }
   }
 
-  function updateParticles(frame,canvas){
+  function updateParticles(frame,canvas,step){
     vHearts.forEach(h=>{
-      h.y -= h.speed;
-      h.x += Math.sin(frame*h.tw + h.phase) * 0.6 + h.drift;
+      h.y -= h.speed * step;
+      h.x += (Math.sin(frame*h.tw + h.phase) * 0.6 + h.drift) * step;
       if(h.y < -80){
         h.y = canvas.height + 80 + Math.random()*300;
         h.x = Math.random()*canvas.width;
       }
     });
     vSharks.forEach(s=>{
-      s.x+=s.speed*s.dir; s.bob+=0.03;
+      s.x += s.speed * s.dir * step; s.bob += 0.03 * step;
       if(s.dir===1 && s.x>canvas.width+300){ s.x=-300-Math.random()*400; s.y=170+Math.random()*(canvas.height-320); }
       if(s.dir===-1 && s.x<-300){ s.x=canvas.width+300+Math.random()*400; s.y=170+Math.random()*(canvas.height-320); }
     });
@@ -314,17 +324,16 @@ const cx=canvas.width/2, y=canvas.height*0.55;
     return arr;
   }
 
-  function drawBigWhite(ctx, x, y, dir){
-    // Draw jumping Chihuahua sprite (replaces the old rectangular big white shark)
+  function drawBigWhite(ctx, x, y, dir) {
+    // Draw jumping Chihuahua sprite (replaces the old big white shark)
     const w = 96;   // draw size (tweak if you want bigger/smaller)
     const h = 64;
 
     ctx.save();
     ctx.translate(x, y);
-    if(dir===-1) ctx.scale(-1,1);
+    if (dir === -1) ctx.scale(-1, 1);
     ctx.imageSmoothingEnabled = false;
 
-    // Anchor: y is treated like "feet on floor"
     if (!chihuahuaImg.complete || chihuahuaImg.naturalWidth === 0) {
       // fallback if image hasn't loaded yet
       ctx.fillStyle = "#ffb07a";
@@ -332,7 +341,8 @@ const cx=canvas.width/2, y=canvas.height*0.55;
       ctx.fillStyle = "#000";
       ctx.fillRect(-8, -h + 18, 6, 6);
     } else {
-      ctx.drawImage(chihuahuaImg, -w/2, -h, w, h);
+      // anchor: y is treated like "feet on floor"
+      ctx.drawImage(chihuahuaImg, -w / 2, -h, w, h);
     }
 
     ctx.restore();
